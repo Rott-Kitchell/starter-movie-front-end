@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 /**
  * Defines the default headers for these functions to work with `json-server`
@@ -25,13 +24,11 @@ headers.append("Content-Type", "application/json");
 async function fetchJson(url, options, onCancel) {
   try {
     const response = await fetch(url, options);
-
     if (response.status === 204) {
       return null;
     }
-
     const payload = await response.json();
-
+    console.log(payload);
     if (payload.error) {
       return Promise.reject({ message: payload.error });
     }
@@ -53,6 +50,12 @@ function populateReviews(signal) {
   };
 }
 
+function getAllReviews(signal) {
+    const url =  `${API_BASE_URL}/reviews`;
+    const reviews = fetchJson(url, { headers, signal }, []);
+    return reviews;
+}
+
 function populateTheaters(signal) {
   return async (movie) => {
     const url = `${API_BASE_URL}/movies/${movie.movie_id}/theaters`;
@@ -67,11 +70,17 @@ function populateTheaters(signal) {
  *  a promise that resolves to a possibly empty array of movies saved in the database.
  */
 export async function listMovies(signal) {
-  const url = new URL(`${API_BASE_URL}/movies?is_showing=true`);
-  const addReviews = populateReviews(signal);
-  return await fetchJson(url, { headers, signal }, []).then((movies) =>
-    Promise.all(movies.map(addReviews))
-  );
+  const url = `${API_BASE_URL}/movies?is_showing=true`;
+  const allReviews = await getAllReviews(signal)
+ allReviews.forEach((review) => console.log(review))
+  return await fetchJson(url, { headers, signal }, []).then((movies) => {
+    return movies.map((movie) => {
+      console.log(movie)
+     let reviewsList = allReviews.filter((review) => review.movie_id === movie.movie_id)
+      movie.reviews = reviewsList;
+      return movie
+    })
+  });
 }
 
 /**
